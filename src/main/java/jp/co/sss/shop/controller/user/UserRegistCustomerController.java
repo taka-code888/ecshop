@@ -1,0 +1,124 @@
+package jp.co.sss.shop.controller.user;
+
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import jp.co.sss.shop.bean.UserBean;
+import jp.co.sss.shop.entity.User;
+import jp.co.sss.shop.form.UserForm;
+import jp.co.sss.shop.repository.UserRepository;
+import jp.co.sss.shop.util.Constant;
+
+/**
+ * 会員管理 登録機能(一般会員)のコントローラクラス
+ *
+ * @author SystemShared
+ */
+@Controller
+public class UserRegistCustomerController {
+
+	/**
+	 * 会員情報
+	 */
+	@Autowired
+	UserRepository userRepository;
+
+	/**
+	 * セッション
+	 */
+	@Autowired
+	HttpSession session;
+
+	/**
+	 * 会員情報入力画面表示処理
+	 *
+	 * @param Model Viewとの値受渡し
+	 * @return "user/regist/user_regist_input" 会員情報 登録入力画面へ
+	 */
+	@RequestMapping(path = "/user/regist/input", method = RequestMethod.GET)
+	public String registInput(Model model) {
+
+		if (!model.containsAttribute("userForm")) {
+			model.addAttribute("userForm", new UserForm());
+		}
+
+		return "user/regist/user_regist_input";
+	}
+	/**
+	 * POSTメソッドを利用して会員情報入力画面に戻る処理
+	 *
+	 * @param form 会員情報
+	 * @return "user/regist/user_regist_input" 会員情報 登録入力画面へ
+	 */
+	@RequestMapping(path = "/user/regist/input", method = RequestMethod.POST)
+	public String registInputBack(UserForm form) {
+
+		return "user/regist/user_regist_input";
+
+	}
+
+	/**
+	 * 会員情報 登録確認処理
+	 *
+	 * @param form   会員情報フォーム
+	 * @param result 入力チェック結果
+	 * @param redirectAttributes リダイレクト後情報保持
+	 * @return
+	 * 入力値エラーあり："redirect:/user/regist/input" 会員情報登録画面へ
+	 * 入力値エラーなし："user/regist/user_regist_check" 会員情報登録入力画面へ
+	 */
+	@RequestMapping(path = "/user/regist/check", method = RequestMethod.POST)
+	public String registCheck(@Valid @ModelAttribute UserForm form, BindingResult result,RedirectAttributes redirectAttributes) {
+
+		// 入力値にエラーがあった場合、エラー情報を保持したまま入力画面に戻る
+		if (result.hasErrors()) {
+
+			redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.userForm", result);
+
+			redirectAttributes.addFlashAttribute("userForm", form);
+
+			return "redirect:/user/regist/input";
+		}
+
+		return "user/regist/user_regist_check";
+	}
+
+	/**
+	 * 会員情報登録完了処理
+	 *
+	 * @param form    会員情報
+	 * @return "user/regist/user_regist_complete" 会員情報 登録完了画面へ
+	 */
+	@RequestMapping(path = "/user/regist/complete", method = RequestMethod.POST)
+	public String registComplete(@ModelAttribute UserForm form) {
+		// 会員情報の生成
+		User user = new User();
+
+		// 入力値を会員情報にコピー
+		BeanUtils.copyProperties(form, user);
+
+		// 会員情報を保存
+		userRepository.save(user);
+
+		// データベースから登録した会員情報を取得(id入りの会員情報)
+		user = userRepository.findByEmailAndDeleteFlag(form.getEmail(), Constant.NOT_DELETED);
+
+		UserBean userBean = new UserBean();
+		BeanUtils.copyProperties(user, userBean);
+
+		// セッションスコープに会員情報を保存
+		session.setAttribute("user", userBean);
+
+		return "user/regist/user_regist_complete";
+	}
+}
