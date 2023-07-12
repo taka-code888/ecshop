@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{common/layout_5block :: layout(~{::body/content()})}">
+<head>
+<title>買い物かご | シェアードショップ</title>
+<meta charset="UTF-8" />
+</head>
+<body class="user shopping_basket">
+		<h2 class="title">買い物かご</h2>
+		<th:block  th:if="${session.basketBeans != null}">
+			<table class="list_table basket">
+				<tr>
+					<th>商品名</th>
+					<th>個数</th>
+					<th>操作</th>
+					<th>在庫</th>
+				</tr>
+
+				<tr th:each="item, status: ${session.basketBeans}">
+					<td><a th:href="@{/item/detail/{id}(id=${item.id})}" th:text="${item.name}"></a></td>
+										
+					<td th:text="${item.orderNum}">
+					
+					
+					</td>
+					<td>
+
+						<form th:action="@{/basket/delete}" method="post">
+							<input type="hidden" name="id" th:value="${item.id}" />
+							<input type="submit" value="削除" class="delete"/>
+						</form>
+					</td>
+					<td th:if="${item.stock == 0}" th:text="在庫なし"> </td>
+					<td th:if="${item.stock > 5}" th:text="在庫あり">  </td>
+					<td th:if="${item.stock >= 1 and 5 >= item.stock }" th:text="${item.stock}"></td>
+					
+				</tr>
+			</table>
+
+
+			<div class="user_info_form_area">
+				<!--/* 注文手続きフォーム */-->
+				<form th:action="@{/address/input}" method="post">
+					<span th:each="item, status: ${session.basketBeans}">
+						<input type="hidden" name="itemId" th:value="${item.id}" />
+						<input type="hidden" name="orderNum" th:value="${item.orderNum}" />
+					</span>
+					<input type="hidden" name="backFlg" value="false" />
+					<input type="submit" value="ご注文のお手続き" />
+				</form>
+				<!--/* 買い物かごを空にするフォーム */-->
+				<form th:action="@{/basket/allDelete/}" method="post">
+					<input type="submit" value="買い物かごを空にする" class="delete" />
+			 	</form>
+			</div>
+		</th:block>
+		<div th:if="${session.basketBeans == null}">
+		<!--/* 買い物かごが空のとき */-->
+		   <p th:text="#{basketList.none}"></p>
+		</div>
+		<div th:if="${errorItem != null}">
+		<!--/* 在庫切れのとき */-->
+		    <p class="err" th:text="#{mark.attention}+${errorItem}+#{basketList.itemStockNone}"></p>
+		</div>
+</body>
+</html>
